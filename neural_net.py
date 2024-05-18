@@ -1,4 +1,4 @@
-# Copyright [2020] Luis Alberto Pineda Cortés, Rafael Morales Gamboa.
+# Copyright [2020] Luis Alberto Pineda Cortés, Rafael Morales Gamboa, Aldo Eliacim Alvarez Lemus.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

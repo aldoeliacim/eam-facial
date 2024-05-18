@@ -14,6 +14,8 @@
 
 import gzip
 import os
+import tensorflow as tf
+import numpy as np
 import random
 from PIL import Image
 
@@ -66,12 +68,9 @@ def _get_segment(segmento, fold, noised=False):
 
     # Seleccionar los índices según el segmento
     n, m = None, None
-    if segmento == _TRAINING_SEGMENT:
-        n, m = i, j
-    elif segmento == _FILLING_SEGMENT:
-        n, m = j, k
-    elif segmento == _TESTING_SEGMENT:
-        n, m = k, l
+    if segmento == _TRAINING_SEGMENT: n, m = i, j
+    elif segmento == _FILLING_SEGMENT: n, m = j, k
+    elif segmento == _TESTING_SEGMENT: n, m = k, l
 
     # Obtener datos y etiquetas en el rango especificado
     data = constants.get_data_in_range(_get_segment.noised, n, m) if noised else constants.get_data_in_range(_get_segment.data, n, m)
@@ -142,8 +141,8 @@ def _load_dataset(path):
     """
     data, noised_data, labels = _preprocessed_dataset(path)
     if (data is None) or (noised_data is None) or (labels is None):
-        data_train, labels_train = _load_fer2013(path, kind='train')
-        data_test, labels_test = _load_fer2013(path, kind='test')
+        data_train, labels_train = _load_fer2013(path, 'train')
+        data_test, labels_test = _load_fer2013(path, 'test')
         
         data = np.concatenate((data_train, data_test), axis=0).astype(dtype=float)
         noised_data = noised(data, constants.noise_percent)
@@ -216,44 +215,34 @@ def _shuffle(data, noised_data, labels):
     np.random.shuffle(indices)
     return data[indices], noised_data[indices], labels[indices]
 
-def _load_mnist(path, kind='train'):
-    """Load MNIST data from `path`"""
-    labels_path = os.path.join(path, '%s-labels-idx1-ubyte.gz' % kind)
-    images_path = os.path.join(path, '%s-images-idx3-ubyte.gz' % kind)
-
-    with gzip.open(labels_path, 'rb') as lbpath:
-        labels = np.frombuffer(lbpath.read(),
-            dtype=np.uint8, offset=8)
-    with gzip.open(images_path, 'rb') as imgpath:
-        images = np.frombuffer(imgpath.read(),
-            dtype=np.uint8, offset=16).reshape(len(labels), 28, 28)
-    return images, labels
-
-def _load_fer2013(path, kind='train'):
+def _load_fer2013(path, subset):
     """
-    Load FER-2013 dataset from `path`.
-    
+    Load FER-2013 dataset from `path` using TensorFlow.
+
     Args:
     path (str): Ruta al conjunto de datos.
-    kind (str): Tipo de conjunto de datos a cargar ('train' o 'test').
-    
+    subset (str): 'train' or 'test'.
+
     Returns:
     tuple: Imágenes y etiquetas.
     """
-    data_path = os.path.join(path, kind)
-    labels = []
-    images = []
+    dataset = tf.keras.preprocessing.image_dataset_from_directory(
+        os.path.join(path, subset),
+        labels='inferred',
+        label_mode='int',
+        color_mode='grayscale',
+        batch_size=None,
+        image_size=(rows, columns),
+        seed=123
+    )
 
-    # Subcarpetas representan las etiquetas
-    for label, emotion in enumerate(os.listdir(data_path)):
-        emotion_path = os.path.join(data_path, emotion)
-        for img_file in os.listdir(emotion_path):
-            img_path = os.path.join(emotion_path, img_file)
-            image = Image.open(img_path).convert('L')  # Convertir a escala de grises
-            image = np.array(image, dtype=np.uint8)
-            images.append(image)
-            labels.append(label)
-    
+    images = []
+    labels = []
+
+    for image, label in dataset:
+        images.append(image.numpy())
+        labels.append(label.numpy())
+
     images = np.array(images)
     labels = np.array(labels)
 
