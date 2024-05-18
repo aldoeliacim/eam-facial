@@ -36,12 +36,11 @@ def conv_block(entry, layers, filters, dropout, first_block = False):
     conv = None
     for i in range(layers):
         if first_block:
-            conv = Conv2D(kernel_size =3, padding ='same', activation='relu', 
-                filters = filters, input_shape = (dataset.columns, dataset.rows, 1))(entry)
+            conv = Conv2D(kernel_size =3, padding ='same', activation='relu',
+                          filters = filters, input_shape = (dataset.columns, dataset.rows, 1))(entry)
             first_block = False
         else:
-            conv = Conv2D(kernel_size =3, padding ='same', activation='relu', 
-                filters = filters)(entry)
+            conv = Conv2D(kernel_size =3, padding ='same', activation='relu', filters = filters)(entry)
         entry = BatchNormalization()(conv)
     pool = MaxPool2D(pool_size = 3, strides =2, padding ='same')(entry)
     drop = SpatialDropout2D(0.4)(pool)
@@ -54,82 +53,65 @@ def get_encoder():
     # Entrada de la red con tamaño de las imágenes del dataset
     input_data = Input(shape=(dataset.columns, dataset.rows, 1))
 
-    dropout = 0.1 # Dropout inicial
     filters = constants.domain // 16  # Filtros iniciales (16 en dominio 256)
+    dropout = 0.1 # Dropout inicial
 
-    # Primer bloque convolucional con 2 capas
-    # Tamaño de la imagen: 48x48 -> 48x48 (sin cambios por padding='same')
-    # Filtros: 16
+    # First convolutional block with larger kernels and adjusted for first block flag
     output = conv_block(input_data, 2, filters, dropout, first_block=True)
     
-    # Duplicamos los filtros y aumentamos el dropout
+    # Second convolutional block
     filters *= 2
-    dropout += 0.7
-    # Segundo bloque convolucional con 2 capas
-    # Tamaño de la imagen: 48x48 -> 24x24 (por MaxPool2D con pool_size=3 y strides=2)
-    # Filtros: 32
+    dropout += 0.7  # Incremental increase to manage complexity and overfitting
     output = conv_block(output, 2, filters, dropout)
-    
-    # Duplicamos los filtros y aumentamos el dropout
+
+    # Additional blocks to handle larger image input and extract deeper features
     filters *= 2
     dropout += 0.7
-    # Tercer bloque convolucional con 3 capas
-    # Tamaño de la imagen: 24x24 -> 12x12 (por MaxPool2D)
-    # Filtros: 64
     output = conv_block(output, 3, filters, dropout)
-    
-    # Duplicamos los filtros y aumentamos el dropout
+
     filters *= 2
     dropout += 0.7
-    # Cuarto bloque convolucional con 3 capas
-    # Tamaño de la imagen: 12x12 -> 6x6 (por MaxPool2D)
-    # Filtros: 128
     output = conv_block(output, 3, filters, dropout)
-    
-    # Duplicamos los filtros y aumentamos el dropout
+
     filters *= 2
     dropout += 0.9
-    # Quinto bloque convolucional con 3 capas
-    # Tamaño de la imagen: 6x6 -> 3x3 (por MaxPool2D)
-    # Filtros: 256
     output = conv_block(output, 3, filters, dropout)
-    
-    # Duplicamos los filtros y aumentamos el dropout
+
     filters *= 2
     dropout += 0.9
-    # Sexto bloque convolucional con 3 capas adicionales
-    # Tamaño de la imagen: 3x3 -> 1x1 (por MaxPool2D)
-    # Filtros: 512
     output = conv_block(output, 3, filters, dropout)
-    
-    # Aplanamos las características extraídas
+
+    # Flattening the output for potential classification or further processing
     output = Flatten()(output)
-    # Normalizamos las características aplanadas
     output = LayerNormalization(name='encoded')(output)
+
     return input_data, output
 
 
 def get_decoder():
-    input_mem = Input(shape=(constants.domain,))
-    width = dataset.columns // 4  # Aquí usamos 12 como width
-    filters = constants.domain // 2
-    dense = Dense(width * width * filters, activation='relu')(input_mem)
+    input_mem = Input(shape=(constants.domain, ))  # Aquí aseguramos que la entrada tenga la forma correcta
+    width = dataset.columns // 8  # Ajustado para imágenes 48x48
+    filters = constants.domain // 4  # 8 filtros iniciales (32 en dominio 256)
+
+    # Primera capa densa y reshape
+    dense = Dense(
+        width * width * filters, activation='relu',
+        input_shape=(constants.domain, ))(input_mem)
     output = Reshape((width, width, filters))(dense)
 
-    # Ajuste de filtros y dropout
     filters *= 2
     dropout = 0.4
 
-    # Bloques de UpSampling para reconstruir la imagen de vuelta a 48x48
-    for i in range(2):
+    # Bloques de transposición convolucional y upsampling
+    for _ in range(3):  # Ajustado a tres bloques para imágenes de 48x48
         trans = Conv2D(kernel_size=3, strides=1, padding='same', activation='relu', filters=filters)(output)
         pool = UpSampling2D(size=2)(trans)
         output = SpatialDropout2D(dropout)(pool)
         dropout /= 2.0
         filters //= 2
         output = BatchNormalization()(output)
-        
-    # Capa final de convolución para obtener la imagen de salida
+
+    # Última capa convolucional y rescaling
     output = Conv2D(filters=1, kernel_size=3, strides=1, activation='sigmoid', padding='same')(output)
     output_img = Rescaling(255.0, name='decoded')(output)
     return input_mem, output_img
@@ -273,9 +255,13 @@ def train_network(prefix, es):
         decoder.compile(optimizer='adam', loss='mean_squared_error', metrics=[rmse])
         decoder.summary()
 
+        print('=================================================================================================')
         # Conectar el codificador, el decodificador y el clasificador
+        print("Input data shape:", input_data.shape)  # Imprimir la forma de los datos de entrada
         encoded = encoder(input_data)
+        print("Encoded shape:", encoded.shape)  # Imprimir la forma de la salida codificada
         decoded = decoder(encoded)
+        print("Decoded shape:", decoded.shape)  # Imprimir la forma de la salida decodificada
         classified = classifier(encoded)
 
         # Definir y compilar el clasificador completo
@@ -335,10 +321,6 @@ def train_network(prefix, es):
 
 
 def obtain_features(model_prefix, features_prefix, labels_prefix, data_prefix, es):
-    """ Generate features for sound segments, corresponding to phonemes.
-    
-    Uses the previously trained neural networks for generating the features.
-    """
     for fold in range(constants.n_folds):
         # Cargar el modelo del encoder para el pliegue actual
         filename = constants.encoder_filename(model_prefix, es, fold)

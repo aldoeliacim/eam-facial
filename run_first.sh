@@ -1,8 +1,9 @@
 #!/bin/bash
 
-for n in 32; do
+for n in 32 64 128 256 512; do
   dir="runs-$n"
   if [ ! -d "$dir" ]; then
+    echo "$dir not found, creating and copying default mem_params.csv"
     mkdir -p "$dir"
     cp mem_params.csv "$dir"  # Copia parámetros por default
   fi
