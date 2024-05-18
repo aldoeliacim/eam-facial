@@ -103,7 +103,7 @@ am_filling_percent = 0.20
 am_testing_percent = 0.10
 noise_percent = 50
 
-n_labels = 10
+n_labels = 6
 labels_per_memory = 1
 all_labels = list(range(n_labels))
 label_formats = ['r:v', 'y--d', 'g-.4', 'y-.3', 'k-.8', 'y--^',

@@ -36,12 +36,11 @@ def conv_block(entry, layers, filters, dropout, first_block = False):
     conv = None
     for i in range(layers):
         if first_block:
-            conv = Conv2D(kernel_size =3, padding ='same', activation='relu', 
-                filters = filters, input_shape = (dataset.columns, dataset.rows, 1))(entry)
+            conv = Conv2D(kernel_size =3, padding ='same', activation='relu',
+                          filters = filters, input_shape = (dataset.columns, dataset.rows, 1))(entry)
             first_block = False
         else:
-            conv = Conv2D(kernel_size =3, padding ='same', activation='relu', 
-                filters = filters)(entry)
+            conv = Conv2D(kernel_size =3, padding ='same', activation='relu', filters = filters)(entry)
         entry = BatchNormalization()(conv)
     pool = MaxPool2D(pool_size = 3, strides =2, padding ='same')(entry)
     drop = SpatialDropout2D(0.4)(pool)
@@ -105,15 +104,17 @@ def get_encoder():
     # Aplanamos las características extraídas
     output = Flatten()(output)
     # Normalizamos las características aplanadas
+    output = Dense(32, activation='relu', name='encoded_dense')(output)  # Adjust the size of the encoded vector
     output = LayerNormalization(name='encoded')(output)
+    
     return input_data, output
 
 
 def get_decoder():
     input_mem = Input(shape=(constants.domain,))
-    width = dataset.columns // 4  # Aquí usamos 12 como width
+    width = dataset.columns // 4
     filters = constants.domain // 2
-    dense = Dense(width * width * filters, activation='relu')(input_mem)
+    dense = Dense(width * width * filters, activation='relu', input_shape=(constants.domain,))(input_mem)
     output = Reshape((width, width, filters))(dense)
 
     # Ajuste de filtros y dropout
