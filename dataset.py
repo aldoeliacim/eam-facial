@@ -94,13 +94,13 @@ def noised(data, percent):
     Returns:
     np.ndarray: Conjunto de datos con ruido añadido.
     """
-    print(f'Adding {percent}% noise to data...')
+    print(f'Adding {percent}% noise to data.')
     copy = np.zeros(data.shape, dtype=float)
     n = 0
     for i in range(len(copy)):
         copy[i] = _noised(data[i], percent)
         n += 1
-        constants.print_counter(n, 10000, step=10)
+        constants.print_counter(n, 10000, step=100)
     return copy
 
 def _noised(image, percent):
