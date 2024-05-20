@@ -1,40 +1,41 @@
+import argparse
 import numpy as np
-
 import constants
 
-## Check that the classification of the chosen images is correct 
+# Configurar argumentos de línea de comandos
+parser = argparse.ArgumentParser(description='Process domain parameter.')
+parser.add_argument('--domain', type=int, required=True, help='Domain value')
+args = parser.parse_args()
 
-## Set domain
-domain = 256
+# Establecer el dominio
+domain = args.domain
 constants.domain = domain
 
-## Set run path
-dirname = f'runs-{domain}'
-constants.run_path=dirname
+# Establecer ruta de ejecución
+dirname = f'runs-{constants.domain}'
+constants.run_path = dirname
 
-## Experimental settings
+# Configuraciones experimentales
 prefix = constants.memory_parameters_prefix
 filename = constants.csv_filename(prefix)
-parameters = \
-             np.genfromtxt(filename, dtype=float, delimiter=',', skip_header=1)
+parameters = np.genfromtxt(filename, dtype=float, delimiter=',', skip_header=1)
 es = constants.ExperimentSettings(parameters)
 
-#
-fname = constants.csv_filename(
-    constants.chosen_prefix,es)
+# Cargar los elementos elegidos
+fname = constants.csv_filename(constants.chosen_prefix, es)
 chosen = np.genfromtxt(fname, dtype=int, delimiter=',')
 
 msg = ""
 
 for fold in range(constants.n_folds):
     prefix = constants.classification_name(es)
-    fname = constants.data_filename(prefix, es, fold) 
-    classif = np.load(fname) # Labels of testing data according to classifier
+    fname = constants.data_filename(prefix, es, fold)
+    classif = np.load(fname)  # Etiquetas de datos de prueba según el clasificador
 
-    label = chosen[fold,0]
-    n = chosen[fold,1]
+    label = chosen[fold, 0]
+    n = chosen[fold, 1]
 
-    if (classif[n] != label):
-        msg += "The image " + str(n) + " selected in fold " + str(fold) + " is assigned by the classifier to " + str(classif[n]) + ", but its correct class is " + str(label) + ".\n"
-    
+    if classif[n] != label:
+        msg += f"The image {n} selected in fold {fold} is assigned by the classifier to {classif[n]}, but its correct class is {label}.\n"
+
 print(msg) if msg != "" else print("All labels are correctly assigned by the classifier.")

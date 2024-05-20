@@ -1,30 +1,28 @@
+import argparse
 import random
-
 import numpy as np
-
 import constants
 
-# This function randomly finds an image of each class
-# (each chosen image belons to a different testing data segment)
-# that was correctly classified
+# Configurar argumentos de línea de comandos
+parser = argparse.ArgumentParser(description='Process domain parameter.')
+parser.add_argument('--domain', type=int, required=True, help='Domain value')
+args = parser.parse_args()
 
-## Set domain
-domain = 256
+# Establecer el dominio
+domain = args.domain
 constants.domain = domain
 
-## Set run path
-dirname = f'runs-{domain}'
-constants.run_path=dirname
+# Establecer ruta de ejecución
+dirname = f'runs-{constants.domain}'
+constants.run_path = dirname
 
-## Experimental settings
+# Configuraciones experimentales
 prefix = constants.memory_parameters_prefix
 filename = constants.csv_filename(prefix)
-parameters = \
-             np.genfromtxt(filename, dtype=float, delimiter=',', skip_header=1)
+parameters = np.genfromtxt(filename, dtype=float, delimiter=',', skip_header=1)
 es = constants.ExperimentSettings(parameters)
 
-# We can do this because in Cifar10 there are the same 
-# number of labels as folds.
+# Podemos hacer esto porque hay el mismo número de etiquetas que de folds.
 chosen = np.zeros((constants.n_folds, 2), dtype=int)
 classes = [*range(constants.n_labels)]
 random.shuffle(classes)
@@ -33,24 +31,23 @@ print(classes)
 for fold in range(constants.n_folds):
     prefix = constants.labels_name(es) + constants.testing_suffix
     fname = constants.data_filename(prefix, es, fold)
-    labels = np.load(fname) # Labels of testing data according to the dataset
+    labels = np.load(fname)  # Etiquetas de datos de prueba según el conjunto de datos
     
     prefix = constants.classification_name(es)
-    fname = constants.data_filename(prefix, es, fold) 
-    classif = np.load(fname) # Labels of testing data according to classifier
+    fname = constants.data_filename(prefix, es, fold)
+    classif = np.load(fname)  # Etiquetas de datos de prueba según el clasificador
 
     label = classes[fold]
     n = 0
     for l, c in zip(labels, classif):
-        # Choose randomly an element that shares the label given by the dataset
-        # and the classifier. That label has to be equal to 'label'.
+        # Elegir aleatoriamente un elemento que comparta la etiqueta dada por el conjunto de datos
+        # y el clasificador. Esa etiqueta tiene que ser igual a 'label'.
         if (random.randrange(10) == 0) and (l == label) and (l == c):
-            chosen[fold,0] = label
-            chosen[fold,1] = n
+            chosen[fold, 0] = label
+            chosen[fold, 1] = n
             break
         n += 1
 
 prefix = constants.chosen_prefix
 fname = constants.csv_filename(prefix, es)
 np.savetxt(fname, chosen, fmt='%d', delimiter=',')
-
