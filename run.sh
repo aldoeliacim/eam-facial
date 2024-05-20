@@ -13,4 +13,6 @@ for n in 32 64 128 256 512; do # Same as in run_first.sh and run_second.sh
   python check_chosen.py --domain=$n
 done
 
+python system_stats.py | tee mem_nsd_prtl_performance.txt
+
 ./run_second.sh

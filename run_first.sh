@@ -10,6 +10,7 @@ for n in 32 64 128 256 512; do
 
   python eam.py -n --domain=$n --runpath=$dir  # Train NN
   python eam.py -f --domain=$n --runpath=$dir  # Extract features
+  
   echo "Running experiment with domain size $n"
   python eam.py -e 1 --domain=$n --runpath=$dir
 

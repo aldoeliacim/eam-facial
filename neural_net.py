@@ -53,7 +53,7 @@ def get_encoder():
     # Entrada de la red con tamaño de las imágenes del dataset
     input_data = Input(shape=(dataset.columns, dataset.rows, 1))
 
-    filters = constants.domain // 16  # Filtros iniciales (16 en dominio 256)
+    filters = constants.domain // 32
     dropout = 0.1 # Dropout inicial
 
     # First convolutional block with larger kernels and adjusted for first block flag
@@ -83,7 +83,7 @@ def get_encoder():
 
     # Flattening the output for potential classification or further processing
     output = Flatten()(output)
-    output = Dense(constants.domain, activation='relu', name='encoded_dense')(output)  # Adjust the size of the encoded vector
+    ##output = Dense(constants.domain, activation='relu', name='encoded_dense')(output)  # Adjust the size of the encoded vector
     output = LayerNormalization(name='encoded')(output)
 
     return input_data, output
@@ -256,13 +256,9 @@ def train_network(prefix, es):
         decoder.compile(optimizer='adam', loss='mean_squared_error', metrics=[rmse])
         decoder.summary()
 
-        print('=================================================================================================')
         # Conectar el codificador, el decodificador y el clasificador
-        print("Input data shape:", input_data.shape)  # Imprimir la forma de los datos de entrada
         encoded = encoder(input_data)
-        print("Encoded shape:", encoded.shape)  # Imprimir la forma de la salida codificada
         decoded = decoder(encoded)
-        print("Decoded shape:", decoded.shape)  # Imprimir la forma de la salida decodificada
         classified = classifier(encoded)
 
         # Definir y compilar el clasificador completo
