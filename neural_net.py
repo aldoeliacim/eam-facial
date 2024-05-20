@@ -83,6 +83,7 @@ def get_encoder():
 
     # Flattening the output for potential classification or further processing
     output = Flatten()(output)
+    output = Dense(constants.domain, activation='relu', name='encoded_dense')(output)  # Adjust the size of the encoded vector
     output = LayerNormalization(name='encoded')(output)
 
     return input_data, output

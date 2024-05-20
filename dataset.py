@@ -94,13 +94,13 @@ def noised(data, percent):
     Returns:
     np.ndarray: Conjunto de datos con ruido añadido.
     """
-    print(f'Adding {percent}% noise to data.')
+    print(f'Adding {percent}% noise to data...',end='')
     copy = np.zeros(data.shape, dtype=float)
     n = 0
     for i in range(len(copy)):
         copy[i] = _noised(data[i], percent)
         n += 1
-        constants.print_counter(n, 10000, step=100)
+        constants.print_counter(n, 10000, step=3)
     return copy
 
 def _noised(image, percent):
@@ -199,15 +199,6 @@ def _save_dataset(data, noised_data, labels, path):
     np.save(noised_fname, noised_data)
     np.save(labels_fname, labels)
     print('Conjunto de datos preprocesado guardado.')
-
-# def _shuffle(data, noised, labels):
-#     print('Shuffling data and labels')
-#     tuples = [(data[i], noised[i], labels[i]) for i in range(len(labels))]
-#     random.shuffle(tuples)
-#     data = np.array([p[0] for p in tuples])
-#     noised = np.array([p[1] for p in tuples])
-#     labels = np.array([p[2] for p in tuples], dtype=int)
-#     return data, noised, labels
 
 def _shuffle(data, noised_data, labels):
     print('Shuffling data and labels')
