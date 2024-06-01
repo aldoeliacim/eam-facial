@@ -21,9 +21,13 @@ filename = constants.csv_filename(prefix)
 parameters = np.genfromtxt(filename, dtype=float, delimiter=',', skip_header=1)
 es = constants.ExperimentSettings(parameters)
 
-# Cargar los elementos elegidos
+# Cargar los elementos elegidos asegurando que sea bidimensional
 fname = constants.csv_filename(constants.chosen_prefix, es)
-chosen = np.genfromtxt(fname, dtype=int, delimiter=',')
+chosen = np.genfromtxt(fname, dtype=int, delimiter=',').reshape(-1, 2)  # Asegurar bidimensionalidad
+
+# Verificar nuevamente
+print(f"Contenido de 'chosen': {chosen}")
+print(f"Forma de 'chosen': {chosen.shape}")
 
 msg = ""
 

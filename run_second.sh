@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for n in 32 64 128 256 512; do
+for n in 128 256 512 1024; do
     dir="runs-$n"
     python eam.py -r --domain=$n --runpath=runs-$n && \
     python eam.py -d --domain=$n --runpath=runs-$n

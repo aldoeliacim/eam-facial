@@ -963,6 +963,10 @@ def dreaming(msize, mfill, cycles, es):
     chosen = np.genfromtxt(filename, dtype=int, delimiter=',')
     print(chosen)
 
+    # Asegurarse de que chosen sea bidimensional si es unidimensional (1 fold)
+    if chosen.ndim == 1:
+        chosen = chosen.reshape(1, -1)
+        
     for fold in range(constants.n_folds):
         print(f'Fold: {fold}')
         gc.collect()

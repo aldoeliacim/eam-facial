@@ -1,10 +1,10 @@
 import json
 
-## Prints the accuracy and decoder_root_mean_squared_error
-## obtained during training of the model on the testing data,
-## for every domain size
+# Imprime la precisión y el error cuadrático medio de la raíz del decodificador
+# obtenidos durante el entrenamiento del modelo en los datos de prueba,
+# para cada tamaño de dominio
 
-domain_sizes = [32, 64, 128, 256, 512]
+domain_sizes = [128, 256, 512, 1024]
 class_metric = 'accuracy'
 autor_metric = 'decoder_root_mean_squared_error'
 
@@ -21,34 +21,36 @@ if __name__ == "__main__":
 
         suffix = '/model-classifier.json'
         filename = f'runs-{domain}{suffix}'
-        # Opening JSON file
+        # Abriendo el archivo JSON
         with open(filename, 'r') as f:
             data = json.load(f)
             history = data['history']
-            # In every two, the first element is the trace of the training, 
-            # and it is ignored. The second element contains the metric and
-            # loss for the classifier 
+            # En cada dos, el primer elemento es el rastro del entrenamiento,
+            # y se ignora. El segundo elemento contiene la métrica y
+            # pérdida del clasificador
             for i in range(0, len(history), 2):
-                class_values.append(history[i+1][class_metric])
+                if i + 1 < len(history):
+                    class_values.append(history[i+1][class_metric])
 
         suffix = '/model-autoencoder.json'
         filename = f'runs-{domain}{suffix}'
-        # Opening JSON file
+        # Abriendo el archivo JSON
         with open(filename, 'r') as f:
             data = json.load(f)
             history = data['history']
-            # In every two, the first element is the trace of the training, 
-            # and it is ignored. The second element contains the metric and
-            # loss for the classifier 
+            # En cada dos, el primer elemento es el rastro del entrenamiento,
+            # y se ignora. El segundo elemento contiene la métrica y
+            # pérdida del clasificador
             for i in range(0, len(history), 2):
-                autor_values.append(history[i+1][autor_metric])
+                if i + 1 < len(history):
+                    autor_values.append(history[i+1][autor_metric])
 
-        print(f'Domain size: {domain}. Metric outputs are presented next.')
-        print(f'Fold\tClassification\tAutoencoder')
+        print(f'Tamaño de dominio: {domain}. Se presentan las salidas métricas.')
+        print(f'Fold\tClasificación\tAutoencoder')
         for j in range(len(class_values)):
             print(f'{j}\t{class_values[j]:.3f}\t\t{autor_values[j]:.3f}')
 
         class_value_mean = sum(class_values) / len(class_values)
         autor_value_mean = sum(autor_values) / len(autor_values)
-        print(f'\nMean accuracy value: {class_value_mean:.4f}, mean rmse value: {autor_value_mean:.4f}')
+        print(f'\nValor medio de precisión: {class_value_mean:.4f}, valor medio de rmse: {autor_value_mean:.4f}')
         print('\n')

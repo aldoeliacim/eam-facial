@@ -4,7 +4,7 @@ import constants
 
 ## Prints accuracy of the classifier for each domain size
 
-domain_sizes = [32, 64, 128, 256, 512]
+domain_sizes = [128, 256, 512, 1024]
 
 def accuracy(labels, predictions):
     n = 0

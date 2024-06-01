@@ -1,4 +1,4 @@
-# Copyright [2020] Luis Alberto Pineda Cortés, Rafael Morales Gamboa, Aldo Eliacim Alvarez Lemus.
+# Copyright [2020] Luis Alberto Pineda Cortés, Rafael Morales Gamboa.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import gzip
 import os
-import tensorflow as tf
-import numpy as np
 import random
+from PIL import Image
 
 import numpy as np
 
@@ -66,9 +66,12 @@ def _get_segment(segmento, fold, noised=False):
 
     # Seleccionar los índices según el segmento
     n, m = None, None
-    if segmento == _TRAINING_SEGMENT: n, m = i, j
-    elif segmento == _FILLING_SEGMENT: n, m = j, k
-    elif segmento == _TESTING_SEGMENT: n, m = k, l
+    if segmento == _TRAINING_SEGMENT:
+        n, m = i, j
+    elif segmento == _FILLING_SEGMENT:
+        n, m = j, k
+    elif segmento == _TESTING_SEGMENT:
+        n, m = k, l
 
     # Obtener datos y etiquetas en el rango especificado
     data = constants.get_data_in_range(_get_segment.noised, n, m) if noised else constants.get_data_in_range(_get_segment.data, n, m)
@@ -92,13 +95,13 @@ def noised(data, percent):
     Returns:
     np.ndarray: Conjunto de datos con ruido añadido.
     """
-    print(f'Adding {percent}% noise to data...',end='')
+    print(f'Adding {percent}% noise to data.')
     copy = np.zeros(data.shape, dtype=float)
     n = 0
     for i in range(len(copy)):
         copy[i] = _noised(data[i], percent)
         n += 1
-        constants.print_counter(n, 10000, step=3)
+        constants.print_counter(n, 10000, step=100)
     return copy
 
 def _noised(image, percent):
@@ -139,8 +142,8 @@ def _load_dataset(path):
     """
     data, noised_data, labels = _preprocessed_dataset(path)
     if (data is None) or (noised_data is None) or (labels is None):
-        data_train, labels_train = _load_fer2013(path, 'train')
-        data_test, labels_test = _load_fer2013(path, 'test')
+        data_train, labels_train = _load_fer2013(path, kind='train')
+        data_test, labels_test = _load_fer2013(path, kind='test')
         
         data = np.concatenate((data_train, data_test), axis=0).astype(dtype=float)
         noised_data = noised(data, constants.noise_percent)
@@ -198,40 +201,59 @@ def _save_dataset(data, noised_data, labels, path):
     np.save(labels_fname, labels)
     print('Conjunto de datos preprocesado guardado.')
 
+# def _shuffle(data, noised, labels):
+#     print('Shuffling data and labels')
+#     tuples = [(data[i], noised[i], labels[i]) for i in range(len(labels))]
+#     random.shuffle(tuples)
+#     data = np.array([p[0] for p in tuples])
+#     noised = np.array([p[1] for p in tuples])
+#     labels = np.array([p[2] for p in tuples], dtype=int)
+#     return data, noised, labels
+
 def _shuffle(data, noised_data, labels):
     print('Shuffling data and labels')
     indices = np.arange(data.shape[0])
     np.random.shuffle(indices)
     return data[indices], noised_data[indices], labels[indices]
 
-def _load_fer2013(path, subset):
-    """
-    Load FER-2013 dataset from `path` using TensorFlow.
+def _load_mnist(path, kind='train'):
+    """Load MNIST data from `path`"""
+    labels_path = os.path.join(path, '%s-labels-idx1-ubyte.gz' % kind)
+    images_path = os.path.join(path, '%s-images-idx3-ubyte.gz' % kind)
 
+    with gzip.open(labels_path, 'rb') as lbpath:
+        labels = np.frombuffer(lbpath.read(),
+            dtype=np.uint8, offset=8)
+    with gzip.open(images_path, 'rb') as imgpath:
+        images = np.frombuffer(imgpath.read(),
+            dtype=np.uint8, offset=16).reshape(len(labels), 28, 28)
+    return images, labels
+
+def _load_fer2013(path, kind='train'):
+    """
+    Load FER-2013 dataset from `path`.
+    
     Args:
     path (str): Ruta al conjunto de datos.
-    subset (str): 'train' or 'test'.
-
+    kind (str): Tipo de conjunto de datos a cargar ('train' o 'test').
+    
     Returns:
     tuple: Imágenes y etiquetas.
     """
-    dataset = tf.keras.preprocessing.image_dataset_from_directory(
-        os.path.join(path, subset),
-        labels='inferred',
-        label_mode='int',
-        color_mode='grayscale',
-        batch_size=None,
-        image_size=(rows, columns),
-        seed=123
-    )
-
-    images = []
+    data_path = os.path.join(path, kind)
     labels = []
+    images = []
 
-    for image, label in dataset:
-        images.append(image.numpy())
-        labels.append(label.numpy())
-
+    # Subcarpetas representan las etiquetas
+    for label, emotion in enumerate(os.listdir(data_path)):
+        emotion_path = os.path.join(data_path, emotion)
+        for img_file in os.listdir(emotion_path):
+            img_path = os.path.join(emotion_path, img_file)
+            image = Image.open(img_path).convert('L')  # Convertir a escala de grises
+            image = np.array(image, dtype=np.uint8)
+            images.append(image)
+            labels.append(label)
+    
     images = np.array(images)
     labels = np.array(labels)
 

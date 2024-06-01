@@ -84,7 +84,7 @@ learning_suffixes = [[original_suffix], [agreed_suffix], [amsystem_suffix],
 
 # Number of columns in memory
 domain = 256
-n_folds = 4
+n_folds = 1
 n_jobs = 1
 dreaming_cycles = 6
 
@@ -103,7 +103,7 @@ am_filling_percent = 0.20
 am_testing_percent = 0.10
 noise_percent = 50
 
-n_labels = 6
+n_labels = 2
 labels_per_memory = 1
 all_labels = list(range(n_labels))
 label_formats = ['r:v', 'y--d', 'g-.4', 'y-.3', 'k-.8', 'y--^',
@@ -264,6 +264,7 @@ def image_filename(prefix, idx, label, suffix='', es=None, fold=None):
     img_dir = image_path + '/' + prefix + '/'
     full_path = run_path + '/' + img_dir
     try:
+        print('Creating dir: ', full_path)
         os.makedirs(full_path, exist_ok=True)
     except Exception as e:
         print("Error creating dir: ", e)

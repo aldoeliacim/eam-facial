@@ -4,7 +4,7 @@ import tensorflow as tf
 import constants
 
 ## Set domain
-domain = 512
+domain = 256
 constants.domain = domain
 msize = 16
 
@@ -15,7 +15,8 @@ constants.run_path=dirname
 ## Experimental settings
 prefix = constants.memory_parameters_prefix
 filename = constants.csv_filename(prefix)
-parameters = np.genfromtxt(filename, dtype=float, delimiter=',', skip_header=1)
+parameters = \
+             np.genfromtxt(filename, dtype=float, delimiter=',', skip_header=1)
 es = constants.ExperimentSettings(parameters)
 sigmas = constants.sigma_values
 n_sigmas = len(sigmas)
